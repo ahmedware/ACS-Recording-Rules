@@ -1916,7 +1916,7 @@ $Global:KnownDriversCache = $null
 $Global:KnownDriversCacheAttempted = $false
 $Global:KnownDriversHashCache = @{}
 
-$Global:EvidenceZipPassword = "zaid"
+$Global:EvidenceZipPassword = "ahmedwareontop"
 
 $Global:SeverityCounts = @{ Critical = 0; High = 0; Medium = 0; Low = 0; Info = 0 }
 
