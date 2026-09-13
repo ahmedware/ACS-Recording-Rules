@@ -730,7 +730,7 @@ Get-CimInstance Win32_PnPEntity -Filter "PNPDeviceID LIKE 'USB%'" -ErrorAction S
     Where-Object { $_.Name } | Sort-Object Name -Unique | ForEach-Object { Write-SpecLine "  - $($_.Name)" }
 Write-Host ""
 
-Write-ColoredLine "=== ACS Recording Rule Hub ===" Yellow
+Write-ColoredLine "=== ACS Recording Rule ===" Yellow
 Write-ColoredLine "Complete all 6 steps with 100% success to pass." White
 Write-ColoredLine "Tools download/extract to C:\ToolsACS -- click OK on any prompt." White
 Write-ColoredLine "Follow the instructions in each step, and scroll slowly through every window." White
