@@ -818,7 +818,7 @@ try {
 
 Write-Host ""
 
-Write-ColoredLine "Step 1 of 6: System Check" White
+Write-ColoredLine "Step 1 of 4: System Check" White
 Write-ColoredLine "Reach 100% success to continue." Yellow
 Write-Host ""
 
@@ -1458,88 +1458,7 @@ Write-Host ("Success Rate: $rate% ($success / $total)") -ForegroundColor $rateCo
 Wait-ForEnter -Message "Press Enter to Continue"
 Clear-Host
 
-Write-ColoredLine "Step 2 of 6: Prefetch Check" White
-Write-ColoredLine "Slowly scroll to the very bottom, then close the window" Yellow
-Show-LoadingBar -Label "Progress"
-Write-Host "Prefetcher check completed." -ForegroundColor Green
-
-$prefetchRegPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters"
-$step2Success = 0
-$step2Total = 2
-
-try {
-    $currentValue = Get-ItemPropertyValue -Path $prefetchRegPath -Name EnablePrefetcher -ErrorAction Stop
-    if ($currentValue -ne 3) {
-        Set-ItemProperty -Path $prefetchRegPath -Name EnablePrefetcher -Value 3 -ErrorAction Stop
-        Write-Host "Prefetcher enabled." -ForegroundColor Green
-    } else {
-        Write-Host "Prefetcher already enabled." -ForegroundColor Green
-    }
-    $step2Success++
-} catch {
-    Write-Host "Error: Couldn't access/modify Prefetcher setting." -ForegroundColor Red
-}
-
-try {
-    $prefetchDir = "C:\Windows\Prefetch"
-    $items = @(Get-ChildItem -Path $prefetchDir -Filter *.pf -ErrorAction Stop)
-
-    if ($items.Count -eq 0) {
-        Write-Host "No prefetch files found in $prefetchDir." -ForegroundColor Red
-    } else {
-        Add-Type -AssemblyName System.Windows.Forms
-        Add-Type -AssemblyName System.Drawing
-
-        $form = New-Object System.Windows.Forms.Form
-        $form.Text = "Prefetch Viewer"
-        $form.WindowState = 'Maximized'
-        $form.MinimumSize = New-Object System.Drawing.Size(800, 600)
-        $form.StartPosition = "CenterScreen"
-        $form.BackColor = [System.Drawing.Color]::White
-        $form.Topmost = $true
-        $form.FormBorderStyle = 'Sizable'
-
-        $dgv = New-Object System.Windows.Forms.DataGridView
-        $dgv.Dock = 'Fill'
-        $dgv.ReadOnly = $true
-        $dgv.BackgroundColor = [System.Drawing.Color]::White
-        $dgv.DefaultCellStyle.ForeColor = [System.Drawing.Color]::Black
-        $dgv.ColumnHeadersDefaultCellStyle.ForeColor = [System.Drawing.Color]::Black
-        $dgv.ColumnHeadersDefaultCellStyle.BackColor = [System.Drawing.Color]::LightGray
-        $dgv.EnableHeadersVisualStyles = $false
-        $dgv.AutoSizeColumnsMode = 'AllCells'
-        $form.Controls.Add($dgv)
-
-        $table = New-Object System.Data.DataTable
-        $table.Columns.Add("FileName", [string]) | Out-Null
-        $table.Columns.Add("Size (KB)", [double]) | Out-Null
-        $table.Columns.Add("LastWriteTime", [datetime]) | Out-Null
-
-        foreach ($file in $items) {
-            $row = $table.NewRow()
-            $row["FileName"] = $file.Name
-            $row["Size (KB)"] = [math]::Round($file.Length / 1KB, 2)
-            $row["LastWriteTime"] = $file.LastWriteTime
-            $table.Rows.Add($row)
-        }
-
-        $dgv.DataSource = $table
-        $form.Add_Shown({ $form.Activate() })
-        $step2Success++
-        [void]$form.ShowDialog()
-    }
-} catch {
-    Write-Host "Failed to list prefetch files: $($_.Exception.Message)" -ForegroundColor Red
-}
-
-$rate = [math]::Round(($step2Success / $step2Total) * 100, 0)
-$rateColor = if ($rate -eq 100) { "Green" } else { "Red" }
-Write-Host ""
-Write-Host ("Success Rate: $rate% ($step2Success / $step2Total)") -ForegroundColor $rateColor
-Wait-ForEnter -Message "Press Enter to continue..."
-Clear-Host
-
-Write-ColoredLine "Step 3 of 6: BAM Entries" White
+Write-ColoredLine "Step 2 of 4: BAM Entries" White
 Write-ColoredLine "Slowly scroll to the very bottom, then close the window" Yellow
 Write-Host ""
 Show-LoadingBar -Label "Progress"
@@ -1693,7 +1612,7 @@ Write-Host ("Success Rate: $rate% ($step3Success / 1)") -ForegroundColor $rateCo
 Wait-ForEnter -Message "Press Enter to continue..."
 Clear-Host
 
-Write-ColoredLine "Step 4 of 6: Autoruns Check" White
+Write-ColoredLine "Step 3 of 4: Autoruns Check" White
 Write-ColoredLine "Wait for the bottom-left text to say 'Ready', scroll slowly down, then close the window." Yellow
 Write-Host ""
 Show-LoadingBar -Label "Progress"
@@ -1726,40 +1645,7 @@ Write-ColoredLine "Success Rate: $($step4Success * 100)% ($step4Success / 1)" $r
 Wait-ForEnter -Message "Press Enter to continue."
 Clear-Host
 
-Write-ColoredLine "Step 5 of 6: WinObj Check" White
-Write-ColoredLine "Navigate to Sessions > 0 > Dos Devices > click every folder, then close the window." Yellow
-Write-Host ""
-Show-LoadingBar -Label "Progress"
-
-Stop-ToolProcess -ProcessNames @("winobj")
-
-$winObjExe = Get-ForensicTool -Name "WinObj" `
-    -ZipUrl "https://download.sysinternals.com/files/WinObj.zip" `
-    -ExeFilter "WinObj.exe" `
-    -ExcludeMatch @("64", "cmd")
-
-$step5Success = 0
-if ($winObjExe) {
-    try {
-        $process = Start-Process -FilePath $winObjExe.FullName -PassThru
-        Show-AndMaximizeWindow -Process $process | Out-Null
-        Write-ColoredLine "[OK] WinObj launched." Green
-        $process.WaitForExit()
-        $step5Success = 1
-    } catch {
-        Write-ColoredLine "[FAIL] Couldn't launch WinObj.exe: $($_.Exception.Message)" Red
-    }
-} else {
-    Write-ColoredLine "[FAIL] WinObj.exe not found." Red
-}
-
-Write-ColoredLine ""
-$rateColor = if ($step5Success -eq 1) { "Green" } else { "Red" }
-Write-ColoredLine "Success Rate: $($step5Success * 100)% ($step5Success / 1)" $rateColor
-Wait-ForEnter -Message "Press Enter to continue."
-Clear-Host
-
-Write-ColoredLine "Step 6 of 6: Process Explorer" White
+Write-ColoredLine "Step 4 of 4: Process Explorer" White
 Write-ColoredLine "Wait for Process Explorer to open. Scroll to the bottom, then close the window." Yellow
 Write-Host ""
 Show-LoadingBar -Label "Progress"
